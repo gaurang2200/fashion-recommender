@@ -124,9 +124,13 @@ class CatalogVectorStore:
             
             # --- Metadata Filtering ---
             if category and category.lower() != "all":
-                prod_cat = product.get("category", "").lower()
-                if category.lower() not in prod_cat and prod_cat not in category.lower():
-                    continue
+                if category.lower() == "new_arrivals":
+                    if not product.get("is_new"):
+                        continue
+                else:
+                    prod_cat = product.get("category", "").lower()
+                    if category.lower() not in prod_cat and prod_cat not in category.lower():
+                        continue
 
             if retailer and retailer.lower() != "all":
                 if product.get("retailer", "").lower() != retailer.lower():

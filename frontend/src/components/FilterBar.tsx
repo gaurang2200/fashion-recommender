@@ -67,7 +67,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   : "pill-inactive hover:border-neutral-400"
               }`}
             >
-              {cat}
+              {cat === "new_arrivals" ? "✨ New Arrivals" : cat}
             </button>
           ))}
         </div>

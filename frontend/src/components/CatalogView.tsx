@@ -33,7 +33,8 @@ export const CatalogView: React.FC = () => {
     setScraping(true);
     setScrapeResult(null);
     try {
-      const res = await triggerScrape({ category: category === "all" ? "tops" : category, retailer });
+      const scrapeCategory = (category === "all" || category === "new_arrivals") ? "tops" : category;
+      const res = await triggerScrape({ category: scrapeCategory, retailer });
       const newAdded = res.new_indexed_count !== undefined ? res.new_indexed_count : res.scraped_count;
       setScrapeResult({
         success: true,
@@ -88,6 +89,7 @@ export const CatalogView: React.FC = () => {
             className="bg-transparent border border-neutral-200 px-3 py-1.5 text-xs uppercase tracking-wider outline-none focus:border-neutral-800 flex-grow sm:flex-grow-0"
           >
             <option value="all">All Categories</option>
+            <option value="new_arrivals">✨ New Arrivals</option>
             <option value="tops">Tops</option>
             <option value="dresses">Dresses</option>
             <option value="bottoms">Bottoms</option>
@@ -164,6 +166,12 @@ export const CatalogView: React.FC = () => {
                     className="h-full w-full object-cover object-top"
                     loading="lazy"
                   />
+                  {p.is_new && (
+                    <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-neutral-900 text-amber-300 text-[8px] font-bold tracking-widest uppercase rounded-sm shadow-sm z-10 border border-amber-400/30 flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-amber-400 animate-pulse" />
+                      NEW
+                    </div>
+                  )}
                   <div className={`absolute bottom-2 left-2 px-1.5 py-0.5 border text-[8px] font-bold tracking-wider uppercase rounded-sm ${getRetailerColor(p.retailer)}`}>
                     {p.retailer}
                   </div>

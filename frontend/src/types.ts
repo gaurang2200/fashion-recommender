@@ -32,6 +32,7 @@ export interface Product {
   match_percentage?: number;
   raw_similarity_pct?: number;
   user_feedback?: "liked" | "disliked" | null;
+  is_new?: boolean;
 }
 
 export interface FilterOptions {

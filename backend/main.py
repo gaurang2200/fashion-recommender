@@ -45,7 +45,7 @@ app.mount("/api/static/clothes", StaticFiles(directory=str(CLOTHES_DIR)), name="
 # Initialize core services
 wardrobe_service = WardrobeService()
 recommend_service = RecommendationService(wardrobe_service)
-scraper_service = ScraperService(wardrobe_service.embedder, recommend_service.vector_store)
+scraper_service = ScraperService(wardrobe_service.embedder, recommend_service.vector_store, recommend_service=recommend_service)
 
 # Initialize catalog on startup
 @app.on_event("startup")
@@ -166,8 +166,12 @@ def get_catalog(
     products = recommend_service.vector_store.products
     filtered = []
     for p in products:
-        if category != "all" and p.get("category") != category.lower():
-            continue
+        if category and category.lower() != "all":
+            if category.lower() == "new_arrivals":
+                if not p.get("is_new"):
+                    continue
+            elif p.get("category") != category.lower():
+                continue
         if retailer != "all" and p.get("retailer") != retailer:
             continue
         filtered.append({k: v for k, v in p.items() if k != "embedding"})
@@ -207,7 +211,7 @@ def get_metadata():
     max_p = max(prices) if prices else 15000
 
     return {
-        "categories": ["all"] + CATEGORIES,
+        "categories": ["all", "new_arrivals"] + CATEGORIES,
         "retailers": ["all"] + RETAILERS,
         "sizes": ["all", "XS", "S", "M", "L", "XL", "XXL", "26", "28", "30", "32", "34", "36", "37", "38", "39", "40", "Free Size"],
         "price_bounds": {

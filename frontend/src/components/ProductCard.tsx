@@ -50,6 +50,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onFeedback })
           loading="lazy"
         />
 
+        {/* NEW badge */}
+        {product.is_new && (
+          <div className="absolute top-3 left-3 px-2 py-0.5 bg-neutral-900 text-amber-300 text-[9px] font-bold tracking-widest uppercase rounded-sm shadow-sm z-10 border border-amber-400/30 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+            NEW
+          </div>
+        )}
+
         {/* Link Out overlay button */}
         <a
           href={product.product_url}
