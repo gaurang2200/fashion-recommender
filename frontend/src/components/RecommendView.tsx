@@ -7,14 +7,14 @@ import { fetchMetadata, fetchRecommendations } from "../api";
 
 interface RecommendViewProps {
   selectedGarment: WardrobeItem | null;
-  onFeedback: (productId: string, isLike: boolean) => void;
+  onFeedback: (productId: string, isLike: boolean, productData?: Product) => void;
   feedbackRefreshTrigger: number;
 }
 
 export const RecommendView: React.FC<RecommendViewProps> = ({
   selectedGarment,
   onFeedback,
-  feedbackRefreshTrigger
+  feedbackRefreshTrigger: _feedbackRefreshTrigger
 }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [meta, setMeta] = useState<any>({
@@ -63,7 +63,7 @@ export const RecommendView: React.FC<RecommendViewProps> = ({
     setPageSize(15);
   }, [selectedGarment]);
 
-  // Query recommendations
+  // Query recommendations (Note: removed feedbackRefreshTrigger so liked items stay in place without jumbling grid)
   useEffect(() => {
     let active = true;
     async function getRecs() {
@@ -87,7 +87,26 @@ export const RecommendView: React.FC<RecommendViewProps> = ({
     return () => {
       active = false;
     };
-  }, [filters, pageSize, feedbackRefreshTrigger]);
+  }, [filters, pageSize]);
+
+  const handleProductFeedback = (productId: string, isLike: boolean) => {
+    // In-place optimistic feedback so card position never shifts or jumbles
+    setProducts(prev => prev.map(p => {
+      if (p.id === productId) {
+        const isCurrentlyLiked = p.user_feedback === "liked";
+        const isCurrentlyDisliked = p.user_feedback === "disliked";
+        let newFeedback: "liked" | "disliked" | null = isLike ? "liked" : "disliked";
+        if ((isLike && isCurrentlyLiked) || (!isLike && isCurrentlyDisliked)) {
+          newFeedback = null;
+        }
+        return { ...p, user_feedback: newFeedback as any };
+      }
+      return p;
+    }));
+
+    const targetProduct = products.find(p => p.id === productId);
+    onFeedback(productId, isLike, targetProduct);
+  };
 
   const loadMore = () => {
     setPageSize(prev => prev + 15);
@@ -177,9 +196,9 @@ export const RecommendView: React.FC<RecommendViewProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
               {products.map(p => (
-                <ProductCard key={p.id} product={p} onFeedback={onFeedback} />
+                <ProductCard key={p.id} product={p} onFeedback={handleProductFeedback} />
               ))}
             </div>
 
@@ -201,3 +220,4 @@ export const RecommendView: React.FC<RecommendViewProps> = ({
     </div>
   );
 };
+

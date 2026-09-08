@@ -1158,3 +1158,36 @@
 [2026-08-17 01:41:30] Embedded [180/194] products...
 [2026-08-17 01:41:32] Embedded [194/194] products...
 [2026-08-17 01:41:32] Catalog indexing finished! Total unique items indexed: 194
+[2026-08-17 02:21:48] Loaded existing clean catalog with 194 unique items.
+[2026-08-17 02:22:00] Loaded existing clean catalog with 194 unique items.
+[2026-08-17 02:22:16] Loaded existing clean catalog with 194 unique items.
+[2026-08-17 02:22:24] Loaded existing clean catalog with 194 unique items.
+[2026-08-17 02:23:02] Starting targeted live product discovery for 1 newly scanned garments...
+[2026-08-17 02:23:02] [1/1] Scraping live Myntra items matching 'Pink Floral dresses' (Category: dresses)...
+[2026-08-17 02:23:07] Retrieved 15 candidate items for 'Pink Floral dresses'.
+[2026-08-17 02:23:08] Found 15 completely unique new products to index.
+[2026-08-17 02:23:08] Downloading images and computing Fashion-CLIP embeddings for new products...
+[2026-08-17 02:23:18] Embedded [10/15] new items...
+[2026-08-17 02:23:19] Embedded [15/15] new items...
+[2026-08-17 02:23:19] New garment live enrichment complete! Total catalog items: 209
+[2026-08-17 22:30:05] Starting on-demand scrape: category='tops', retailer='all'
+[2026-08-17 22:30:10] Scraped 25 live products.
+[2026-08-17 22:31:30] Starting on-demand scrape: category='tops', retailer='all'
+[2026-08-17 22:31:36] Scraped 25 live products.
+[2026-08-17 22:31:59] Starting on-demand scrape: category='tops', retailer='all'
+[2026-08-17 22:32:08] Scraped 25 live products.
+[2026-08-17 22:36:11] Loaded existing clean catalog with 209 unique items.
+[2026-08-17 22:36:30] Starting on-demand scrape: category='tops', retailer='myntra'
+[2026-08-17 22:36:31] Scraped 30 candidate live products from retailers.
+[2026-08-17 22:36:31] Identified 17 completely new unique products to index.
+[2026-08-17 22:36:31] Downloading images and computing Fashion-CLIP embeddings for new products...
+[2026-08-17 22:36:39] Successfully added and indexed 17 new products. Total catalog size: 226
+[2026-08-22 13:52:51] Starting on-demand scrape: category='tops', retailer='all'
+[2026-08-22 13:52:58] Scraped 30 candidate live products from retailers.
+[2026-08-22 13:52:58] Identified 18 completely new unique products to index.
+[2026-08-22 13:52:58] Downloading images and computing Fashion-CLIP embeddings for new products...
+[2026-08-22 13:53:06] Successfully added and indexed 18 new products. Total catalog size: 227
+[2026-09-08 21:23:13] Loaded existing clean catalog with 227 unique items.
+[2026-09-08 21:46:41] Loaded existing clean catalog with 227 unique items.
+[2026-09-08 21:46:44] Loaded existing clean catalog with 227 unique items.
+[2026-09-08 21:46:49] Loaded existing clean catalog with 227 unique items.

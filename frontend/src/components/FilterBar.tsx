@@ -139,13 +139,13 @@ export const FilterBar: React.FC<FilterBarProps> = ({
 
       <hr className="border-neutral-100" />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-center">
         {/* Price Ranges */}
         <div>
           <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold block mb-3">
             Price Range (INR ₹)
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
             <input
               type="number"
               placeholder={`Min: ₹${priceBounds.min}`}
@@ -153,7 +153,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onChange={(e) => handlePriceChange(e, "min")}
               className="w-full border border-neutral-200 px-3 py-2 text-xs tracking-wider outline-none focus:border-neutral-800"
             />
-            <span className="text-neutral-400 text-xs">—</span>
+            <span className="text-neutral-400 text-xs text-center hidden sm:inline">—</span>
             <input
               type="number"
               placeholder={`Max: ₹${priceBounds.max}`}

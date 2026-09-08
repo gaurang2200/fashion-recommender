@@ -4,8 +4,8 @@ import { WardrobeGrid } from "./components/WardrobeGrid";
 import { RecommendView } from "./components/RecommendView";
 import { CatalogView } from "./components/CatalogView";
 import { StyleInsights } from "./components/StyleInsights";
-import { fetchHealth, fetchWardrobe, rescanWardrobe, submitFeedback } from "./api";
-import type { WardrobeItem } from "./types";
+import { fetchHealth, fetchWardrobe, rescanWardrobe, submitFeedback, fetchCatalogStatus } from "./api";
+import type { WardrobeItem, Product } from "./types";
 import { CheckCircle2, ShieldAlert } from "lucide-react";
 
 function App() {
@@ -46,10 +46,36 @@ function App() {
     setNotice(null);
     try {
       const res = await rescanWardrobe(false);
-      setNotice({
-        success: true,
-        text: `Wardrobe scanned successfully! Detected ${res.data.total_garments} wardrobe items.`
-      });
+      const newCount = res.new_items_count || 0;
+      if (newCount > 0) {
+        setNotice({
+          success: true,
+          text: `Wardrobe scanned! Discovered ${newCount} new garment${newCount > 1 ? "s" : ""}. Finding matching pieces online in the background...`
+        });
+        
+        // Poll status in background and auto-refresh recommendations when done
+        const pollInterval = setInterval(async () => {
+          try {
+            const status = await fetchCatalogStatus();
+            if (!status.is_indexing) {
+              clearInterval(pollInterval);
+              await loadData();
+              setFeedbackTrigger(prev => prev + 1);
+              setNotice({
+                success: true,
+                text: `Catalog enriched with new matching pieces! Total items: ${status.total_products}`
+              });
+            }
+          } catch (e) {
+            clearInterval(pollInterval);
+          }
+        }, 3000);
+      } else {
+        setNotice({
+          success: true,
+          text: `Wardrobe scanned successfully! All ${res.data.total_garments} garments are up to date.`
+        });
+      }
       await loadData();
     } catch (err) {
       setNotice({
@@ -61,9 +87,9 @@ function App() {
     }
   };
 
-  const handleFeedback = async (productId: string, isLike: boolean) => {
+  const handleFeedback = async (productId: string, isLike: boolean, productData?: Product) => {
     try {
-      await submitFeedback(productId, isLike);
+      await submitFeedback(productId, isLike, productData);
       // Reload stats and trigger recomposition
       const health = await fetchHealth();
       setStats(prev => ({ ...prev, likesCount: health.likes_count }));
@@ -98,7 +124,7 @@ function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-grow max-w-7xl mx-auto px-6 py-8 w-full flex flex-col gap-10">
+      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 w-full flex flex-col gap-8 sm:gap-10">
         {/* Notice alert */}
         {notice && (
           <div className={`p-4 border flex items-center gap-3 transition-all ${
@@ -153,7 +179,7 @@ function App() {
 
       {/* Footer copyright */}
       <footer className="border-t border-neutral-200 bg-white py-6 mt-12">
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center text-[10px] uppercase tracking-widest text-neutral-400 font-medium">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-2 text-[10px] uppercase tracking-widest text-neutral-400 font-medium text-center sm:text-left">
           <span>Trend AI Style Matching Engine v2</span>
           <span>© 2026 Gaurang. All Rights Reserved.</span>
         </div>

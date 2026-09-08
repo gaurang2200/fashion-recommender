@@ -34,12 +34,13 @@ export const CatalogView: React.FC = () => {
     setScrapeResult(null);
     try {
       const res = await triggerScrape({ category: category === "all" ? "tops" : category, retailer });
+      const newAdded = res.new_indexed_count !== undefined ? res.new_indexed_count : res.scraped_count;
       setScrapeResult({
         success: true,
-        message: `Successfully completed scraper pass! Scraped ${res.scraped_count} live items from retailers. Indexing run triggered.`,
+        message: `Successfully completed scraper pass! Scraped ${res.scraped_count} live items (${newAdded} new unique items added & indexed). Total catalog: ${res.total_catalog_size || total} items.`,
         scraped_count: res.scraped_count
       });
-      loadCatalog();
+      await loadCatalog();
     } catch (err: any) {
       setScrapeResult({
         success: false,
@@ -66,7 +67,7 @@ export const CatalogView: React.FC = () => {
   return (
     <div className="w-full flex flex-col gap-8">
       {/* Search and Scraper Control Header */}
-      <div className="bg-white border border-neutral-200 p-6 flex flex-col lg:flex-row items-center justify-between gap-6">
+      <div className="bg-white border border-neutral-200 p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div className="flex flex-col">
           <h2 className="editorial-serif text-lg font-medium text-neutral-800 uppercase tracking-widest">
             Retailer Catalogs Explorer
@@ -77,14 +78,14 @@ export const CatalogView: React.FC = () => {
         </div>
 
         {/* Manual scraping triggers */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="text-xs text-neutral-500 font-medium">
+        <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+          <div className="text-xs text-neutral-500 font-medium w-full sm:w-auto">
             Category to Scrape:
           </div>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            className="bg-transparent border border-neutral-200 px-3 py-1.5 text-xs uppercase tracking-wider outline-none focus:border-neutral-800"
+            className="bg-transparent border border-neutral-200 px-3 py-1.5 text-xs uppercase tracking-wider outline-none focus:border-neutral-800 flex-grow sm:flex-grow-0"
           >
             <option value="all">All Categories</option>
             <option value="tops">Tops</option>
@@ -97,7 +98,7 @@ export const CatalogView: React.FC = () => {
           <select
             value={retailer}
             onChange={(e) => setRetailer(e.target.value)}
-            className="bg-transparent border border-neutral-200 px-3 py-1.5 text-xs uppercase tracking-wider outline-none focus:border-neutral-800"
+            className="bg-transparent border border-neutral-200 px-3 py-1.5 text-xs uppercase tracking-wider outline-none focus:border-neutral-800 flex-grow sm:flex-grow-0"
           >
             <option value="all">All Retailers</option>
             <option value="Ajio">Ajio</option>
@@ -108,7 +109,7 @@ export const CatalogView: React.FC = () => {
           <button
             onClick={handleScrape}
             disabled={scraping}
-            className="editorial-button px-5 py-2 flex items-center gap-2 cursor-pointer font-medium disabled:opacity-55"
+            className="editorial-button px-5 py-2 flex items-center justify-center gap-2 cursor-pointer font-medium disabled:opacity-55 w-full sm:w-auto"
           >
             <RefreshCcw className={`w-3.5 h-3.5 ${scraping ? "animate-spin" : ""}`} />
             {scraping ? "Scraping Live..." : "Scrape Now"}
@@ -153,7 +154,7 @@ export const CatalogView: React.FC = () => {
             <p className="text-sm font-medium">No catalog items match these filters.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
             {products.map(p => (
               <div key={p.id} className="editorial-card bg-white flex flex-col h-full overflow-hidden border border-neutral-200">
                 <div className="relative aspect-[3/4] w-full overflow-hidden bg-neutral-50 border-b border-neutral-100">
@@ -194,3 +195,4 @@ export const CatalogView: React.FC = () => {
     </div>
   );
 };
+

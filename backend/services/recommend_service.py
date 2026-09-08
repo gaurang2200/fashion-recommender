@@ -53,11 +53,13 @@ class RecommendationService:
 
         feedback_entry = {
             "product_id": product_id,
-            "title": product.get("title") if product else product_data.get("title", ""),
-            "brand": product.get("brand") if product else product_data.get("brand", ""),
-            "category": product.get("category") if product else product_data.get("category", ""),
-            "price": product.get("price") if product else product_data.get("price", 0),
-            "retailer": product.get("retailer") if product else product_data.get("retailer", ""),
+            "title": product.get("title") if product else (product_data.get("title", "") if product_data else ""),
+            "brand": product.get("brand") if product else (product_data.get("brand", "") if product_data else ""),
+            "category": product.get("category") if product else (product_data.get("category", "") if product_data else ""),
+            "price": product.get("price") if product else (product_data.get("price", 0) if product_data else 0),
+            "retailer": product.get("retailer") if product else (product_data.get("retailer", "") if product_data else ""),
+            "image_url": product.get("image_url") if product else (product_data.get("image_url", "") if product_data else ""),
+            "product_url": product.get("product_url") if product else (product_data.get("product_url", "") if product_data else ""),
             "embedding": embedding
         }
 
@@ -203,3 +205,39 @@ class RecommendationService:
             "liked_count": len(self.feedback["likes"]),
             "disliked_count": len(self.feedback["dislikes"])
         }
+
+    def get_liked_products(self) -> Dict[str, Any]:
+        """
+        Retrieve full product details for all dresses/items marked as liked by user.
+        """
+        product_map = {p["id"]: p for p in self.vector_store.products if "id" in p}
+        liked_items = []
+
+        for pid, entry in self.feedback.get("likes", {}).items():
+            if pid in product_map:
+                prod_copy = product_map[pid].copy()
+                if "embedding" in prod_copy:
+                    del prod_copy["embedding"]
+                prod_copy["user_feedback"] = "liked"
+                liked_items.append(prod_copy)
+            else:
+                liked_items.append({
+                    "id": pid,
+                    "title": entry.get("title", "Liked Item"),
+                    "brand": entry.get("brand", "Unknown"),
+                    "category": entry.get("category", "dresses"),
+                    "price": entry.get("price", 0),
+                    "original_price": entry.get("price", 0),
+                    "discount_pct": 0,
+                    "retailer": entry.get("retailer", "Unknown"),
+                    "image_url": entry.get("image_url", ""),
+                    "product_url": entry.get("product_url", "#"),
+                    "sizes": ["M", "L"],
+                    "user_feedback": "liked"
+                })
+
+        return {
+            "total": len(liked_items),
+            "items": liked_items
+        }
+

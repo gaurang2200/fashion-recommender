@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import type { StyleInsightsData } from "../types";
-import { fetchStyleInsights } from "../api";
+import type { StyleInsightsData, Product } from "../types";
+import { fetchStyleInsights, fetchLikedProducts, submitFeedback } from "../api";
+import { ProductCard } from "./ProductCard";
 import { Sparkles, BarChart2, Heart, Award } from "lucide-react";
 
 interface StyleInsightsProps {
@@ -9,22 +10,52 @@ interface StyleInsightsProps {
 
 export const StyleInsights: React.FC<StyleInsightsProps> = ({ feedbackRefreshTrigger }) => {
   const [insights, setInsights] = useState<StyleInsightsData | null>(null);
+  const [likedProducts, setLikedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingLikes, setLoadingLikes] = useState(false);
+
+  const loadData = async () => {
+    setLoading(true);
+    setLoadingLikes(true);
+    try {
+      const data = await fetchStyleInsights();
+      setInsights(data);
+    } catch (err) {
+      console.error("Failed to load insights:", err);
+    } finally {
+      setLoading(false);
+    }
+
+    try {
+      const likesRes = await fetchLikedProducts();
+      setLikedProducts(likesRes.items);
+    } catch (err) {
+      console.error("Failed to load liked products:", err);
+    } finally {
+      setLoadingLikes(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadInsights() {
-      setLoading(true);
-      try {
-        const data = await fetchStyleInsights();
-        setInsights(data);
-      } catch (err) {
-        console.error("Failed to load insights:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadInsights();
+    loadData();
   }, [feedbackRefreshTrigger]);
+
+  const handleUnlike = async (productId: string, isLike: boolean) => {
+    try {
+      await submitFeedback(productId, isLike);
+      if (!isLike) {
+        setLikedProducts(prev => prev.filter(p => p.id !== productId));
+      } else {
+        // Toggle or re-fetch
+        const likesRes = await fetchLikedProducts();
+        setLikedProducts(likesRes.items);
+      }
+      const data = await fetchStyleInsights();
+      setInsights(data);
+    } catch (err) {
+      console.error("Failed to update feedback:", err);
+    }
+  };
 
   if (loading || !insights) {
     return (
@@ -50,7 +81,8 @@ export const StyleInsights: React.FC<StyleInsightsProps> = ({ feedbackRefreshTri
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Total stats card */}
         <div className="bg-white border border-neutral-200 p-6 flex flex-col items-center justify-center text-center">
           <BarChart2 className="w-8 h-8 text-neutral-800 mb-3" />
@@ -88,6 +120,48 @@ export const StyleInsights: React.FC<StyleInsightsProps> = ({ feedbackRefreshTri
             Style Catalog Dislikes
           </span>
         </div>
+      </div>
+
+      {/* My Liked Collection Grid */}
+      <div className="bg-white border border-neutral-200 p-6 flex flex-col gap-6">
+        <div className="flex justify-between items-baseline border-b border-neutral-100 pb-3">
+          <div>
+            <h3 className="editorial-serif text-base font-semibold uppercase tracking-widest text-neutral-800 flex items-center gap-2">
+              <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+              My Liked Collection
+            </h3>
+            <p className="text-xs text-neutral-400 font-light mt-1">
+              All dresses and garments you marked thumbs-up while exploring style recommendations.
+            </p>
+          </div>
+          <span className="text-xs text-neutral-500 font-medium">
+            {likedProducts.length} {likedProducts.length === 1 ? "Item" : "Items"}
+          </span>
+        </div>
+
+        {loadingLikes ? (
+          <div className="py-12 flex justify-center items-center text-neutral-400 text-xs uppercase tracking-widest font-medium">
+            Loading collection...
+          </div>
+        ) : likedProducts.length === 0 ? (
+          <div className="py-12 text-center text-neutral-400 bg-neutral-50 border border-neutral-100 p-6">
+            <Heart className="w-8 h-8 mx-auto mb-2 opacity-40 text-neutral-400" />
+            <p className="text-sm font-medium text-neutral-700">No Liked Dresses Yet</p>
+            <p className="text-xs font-light mt-1 text-neutral-500">
+              Click the thumbs-up icon on any dress in the recommendation feed or catalog explorer to save it here!
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+            {likedProducts.map(product => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onFeedback={handleUnlike}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -144,3 +218,4 @@ export const StyleInsights: React.FC<StyleInsightsProps> = ({ feedbackRefreshTri
     </div>
   );
 };
+

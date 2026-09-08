@@ -27,8 +27,10 @@ class WardrobeService:
 
     def save(self):
         os.makedirs(os.path.dirname(WARDROBE_FILE), exist_ok=True)
-        with open(WARDROBE_FILE, "w", encoding="utf-8") as f:
+        tmp_file = f"{WARDROBE_FILE}.{os.getpid()}.tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(self.wardrobe_data, f, indent=2, ensure_ascii=False)
+        os.replace(tmp_file, WARDROBE_FILE)
 
     def scan_and_process(self, force_resegment: bool = False) -> Dict[str, Any]:
         """
@@ -46,6 +48,7 @@ class WardrobeService:
         }
 
         updated_items = []
+        new_items = []
         vectors_for_profile = []
 
         print(f"[WardrobeService] Scanning {len(photo_paths)} photos in {CLOTHES_DIR}...")
@@ -76,6 +79,7 @@ class WardrobeService:
                         "embedding": embedding_vec.tolist()
                     }
                     updated_items.append(item)
+                    new_items.append(item)
                     vectors_for_profile.append(embedding_vec)
                 except Exception as e:
                     print(f"Error processing {filename}: {e}")
@@ -99,7 +103,8 @@ class WardrobeService:
         
         return {
             "total_garments": len(updated_items),
-            "processed_count": len(updated_items),
+            "new_items_count": len(new_items),
+            "new_items": [{k: v for k, v in it.items() if k != "embedding"} for it in new_items],
             "items": self.get_items_summary()
         }
 

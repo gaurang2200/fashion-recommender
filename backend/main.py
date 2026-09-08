@@ -103,12 +103,26 @@ def get_wardrobe():
 
 @app.post("/api/wardrobe/rescan")
 def rescan_wardrobe(force: bool = Query(False, description="Force re-segmentation of all images")):
-    """Rescans the clothes/ folder, detects garments, and generates Fashion-CLIP embeddings."""
+    """Rescans the clothes/ folder, detects garments, and triggers live scraping for new items."""
     result = wardrobe_service.scan_and_process(force_resegment=force)
+    new_items = result.get("new_items", [])
+    if new_items:
+        scraper_service.scrape_and_index_for_new_garments(new_items, limit_per_item=30)
+        
     return {
         "status": "success",
-        "message": f"Wardrobe refreshed. Found {result['total_garments']} garments.",
+        "message": f"Wardrobe refreshed. Found {result['total_garments']} garments ({result.get('new_items_count', 0)} new).",
+        "new_items_count": result.get("new_items_count", 0),
+        "background_scraping": len(new_items) > 0,
         "data": result
+    }
+
+@app.get("/api/catalog/status")
+def get_catalog_status():
+    return {
+        "is_indexing": scraper_service.is_indexing(),
+        "total_products": len(recommend_service.vector_store.products),
+        "index_size": recommend_service.vector_store.index.ntotal if recommend_service.vector_store.index else 0
     }
 
 @app.post("/api/recommend")
@@ -177,6 +191,12 @@ def trigger_scrape(req: ScrapeRequest):
 def get_style_insights():
     """Retrieve comprehensive style analysis, color palettes, and taste analytics."""
     return recommend_service.get_style_insights()
+
+@app.get("/api/likes")
+def get_liked_products():
+    """Retrieve full product objects for all liked dresses/items."""
+    return recommend_service.get_liked_products()
+
 
 @app.get("/api/meta")
 def get_metadata():

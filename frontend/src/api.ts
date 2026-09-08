@@ -71,3 +71,14 @@ export async function fetchStyleInsights(): Promise<StyleInsightsData> {
   const res = await fetch(`${API_BASE}/style-insights`);
   return res.json();
 }
+
+export async function fetchCatalogStatus(): Promise<{ is_indexing: boolean; total_products: number; index_size: number }> {
+  const res = await fetch(`${API_BASE}/catalog/status`);
+  return res.json();
+}
+
+export async function fetchLikedProducts(): Promise<{ total: number; items: Product[] }> {
+  const res = await fetch(`${API_BASE}/likes`);
+  return res.json();
+}
+

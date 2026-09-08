@@ -11,7 +11,7 @@ interface WardrobeGridProps {
 export const WardrobeGrid: React.FC<WardrobeGridProps> = ({ items, selectedId, onSelect }) => {
   return (
     <div className="w-full">
-      <div className="flex justify-between items-baseline mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-baseline gap-2 mb-6">
         <h2 className="editorial-serif text-lg font-medium text-neutral-800 uppercase tracking-widest">
           My Wardrobe Capsule
         </h2>
@@ -20,7 +20,7 @@ export const WardrobeGrid: React.FC<WardrobeGridProps> = ({ items, selectedId, o
         </span>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
         {/* Style Profile Pill option */}
         <div
           onClick={() => onSelect("all")}

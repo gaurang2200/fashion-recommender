@@ -64,11 +64,11 @@ class MyntraScraper(BaseScraper):
             print(f"[MyntraScraper] Live fetch info: {e}")
         return products
 
-    def scrape_search(self, query: str, category: str = "tops", limit: int = 5) -> List[Dict[str, Any]]:
-        """Scrape Myntra search results for a query."""
+    def scrape_search(self, query: str, category: str = "tops", limit: int = 30) -> List[Dict[str, Any]]:
+        """Scrape Myntra search results for a targeted query."""
         import urllib.parse
-        encoded_query = urllib.parse.quote(query)
-        url = f"{self.base_url}/search?q={encoded_query}"
+        clean_slug = re.sub(r'[^a-zA-Z0-9]+', '-', query.lower()).strip('-')
+        url = f"{self.base_url}/{clean_slug}?rawQuery={urllib.parse.quote(query)}"
         
         products = []
         try:
