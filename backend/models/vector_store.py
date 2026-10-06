@@ -1,4 +1,6 @@
 import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import json
 import faiss
 import numpy as np
@@ -62,7 +64,8 @@ class CatalogVectorStore:
 
     def search(
         self,
-        query_vector: np.ndarray,
+        query_vector: Optional[np.ndarray] = None,
+        query_vectors: Optional[List[np.ndarray]] = None,
         category: Optional[str] = None,
         retailer: Optional[str] = None,
         min_price: Optional[float] = None,
@@ -75,45 +78,74 @@ class CatalogVectorStore:
         top_k: int = 40
     ) -> List[Dict[str, Any]]:
         """
-        Search catalog with vector similarity, active preference boost, and metadata filters.
+        Search catalog with multi-cluster vector similarity, K-NN preference reranking, and metadata filters.
         """
         if self.index is None or self.index.ntotal == 0 or len(self.products) == 0:
             return []
 
-        # Ensure query is 2D float32 normalized
-        q_vec = query_vector.reshape(1, -1).astype(np.float32)
-        norm = np.linalg.norm(q_vec)
-        if norm > 0:
-            q_vec = q_vec / norm
+        # Collect and normalize all query vectors (from single vector or cluster list)
+        q_list = []
+        if query_vectors and len(query_vectors) > 0:
+            q_list = query_vectors
+        elif query_vector is not None:
+            q_list = [query_vector]
 
-        # Compute raw similarity scores across all products
-        # FAISS search on top ntotal items
+        if not q_list:
+            return []
+
+        norm_q_list = []
+        for q in q_list:
+            q_arr = np.array(q, dtype=np.float32).reshape(1, -1)
+            q_norm = np.linalg.norm(q_arr)
+            if q_norm > 0:
+                q_arr = q_arr / q_norm
+            norm_q_list.append(q_arr[0])
+
+        q_matrix = np.array(norm_q_list, dtype=np.float32)
+
+        # Search FAISS across all cluster centroids simultaneously
         k_search = min(self.index.ntotal, 500)
-        scores, indices = self.index.search(q_vec, k_search)
-        
-        scores = scores[0]
-        indices = indices[0]
+        scores, indices = self.index.search(q_matrix, k_search)
 
-        # Calculate user taste displacement vector from likes/dislikes
-        pref_vec = None
-        if liked_vectors or disliked_vectors:
-            likes = np.array(liked_vectors) if liked_vectors and len(liked_vectors) > 0 else None
-            dislikes = np.array(disliked_vectors) if disliked_vectors and len(disliked_vectors) > 0 else None
-            
-            p_acc = np.zeros(self.dim, dtype=np.float32)
-            if likes is not None and len(likes) > 0:
-                p_acc += np.mean(likes, axis=0)
-            if dislikes is not None and len(dislikes) > 0:
-                p_acc -= 0.6 * np.mean(dislikes, axis=0)
-                
-            p_norm = np.linalg.norm(p_acc)
-            if p_norm > 0:
-                pref_vec = (p_acc / p_norm).astype(np.float32)
+        # Aggregate maximum cluster similarity for each candidate product index
+        best_sim_map: Dict[int, float] = {}
+        for k_idx in range(len(q_matrix)):
+            for sim_score, prod_idx in zip(scores[k_idx], indices[k_idx]):
+                if prod_idx < 0 or prod_idx >= len(self.products):
+                    continue
+                prod_idx = int(prod_idx)
+                sim_val = float(sim_score)
+                if prod_idx not in best_sim_map or sim_val > best_sim_map[prod_idx]:
+                    best_sim_map[prod_idx] = sim_val
+
+        # Prepare liked/disliked matrix for K-NN feedback reranking
+        likes_matrix = None
+        if liked_vectors and len(liked_vectors) > 0:
+            l_list = []
+            for lv in liked_vectors:
+                l_arr = np.array(lv, dtype=np.float32)
+                l_norm = np.linalg.norm(l_arr)
+                if l_norm > 0:
+                    l_arr = l_arr / l_norm
+                l_list.append(l_arr)
+            likes_matrix = np.array(l_list, dtype=np.float32)
+
+        dislikes_matrix = None
+        if disliked_vectors and len(disliked_vectors) > 0:
+            d_list = []
+            for dv in disliked_vectors:
+                d_arr = np.array(dv, dtype=np.float32)
+                d_norm = np.linalg.norm(d_arr)
+                if d_norm > 0:
+                    d_arr = d_arr / d_norm
+                d_list.append(d_arr)
+            dislikes_matrix = np.array(d_list, dtype=np.float32)
 
         results = []
         seen_res_ids = set()
         seen_res_urls = set()
-        for sim_score, idx in zip(scores, indices):
+
+        for idx, raw_sim in best_sim_map.items():
             if idx < 0 or idx >= len(self.products):
                 continue
             product = self.products[idx].copy()
@@ -147,16 +179,27 @@ class CatalogVectorStore:
                 if size.upper() not in available_sizes and "FREE SIZE" not in available_sizes:
                     continue
 
-            # --- Preference Reranking ---
-            raw_sim = float(sim_score)
+            # --- K-NN Preference Reranking ---
             pref_boost = 0.0
-            
-            if pref_vec is not None and "embedding" in product:
+            prod_vec = None
+            if "embedding" in product:
                 prod_vec = np.array(product["embedding"], dtype=np.float32)
                 p_norm = np.linalg.norm(prod_vec)
                 if p_norm > 0:
                     prod_vec = prod_vec / p_norm
-                pref_boost = float(np.dot(pref_vec, prod_vec))
+
+            if prod_vec is not None and (likes_matrix is not None or dislikes_matrix is not None):
+                like_boost = 0.0
+                if likes_matrix is not None:
+                    like_sims = np.dot(likes_matrix, prod_vec)
+                    like_boost = float(np.max(like_sims))
+
+                dislike_penalty = 0.0
+                if dislikes_matrix is not None:
+                    dislike_sims = np.dot(dislikes_matrix, prod_vec)
+                    dislike_penalty = float(np.max(dislike_sims))
+
+                pref_boost = like_boost - 0.6 * dislike_penalty
                 final_score = (1.0 - preference_weight) * raw_sim + preference_weight * pref_boost
             else:
                 final_score = raw_sim

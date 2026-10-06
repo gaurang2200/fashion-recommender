@@ -109,29 +109,29 @@ class RecommendationService:
         """
         Query recommendations matching either a specific wardrobe garment ID or the full style profile.
         """
-        query_vector = None
+        query_vectors = None
         source_garment = None
 
         if garment_id and garment_id != "all":
             source_garment = self.wardrobe_service.get_item_by_id(garment_id)
             if source_garment and "embedding" in source_garment:
-                query_vector = np.array(source_garment["embedding"], dtype=np.float32)
+                query_vectors = [np.array(source_garment["embedding"], dtype=np.float32)]
                 # If category filter is not set, default to the garment's detected category for relevance
                 if not category or category.lower() == "all":
                     category = source_garment.get("category", "all")
         
-        if query_vector is None:
-            # Fallback to general style profile
-            query_vector = self.wardrobe_service.get_style_profile_vector()
+        if query_vectors is None:
+            # Multi-cluster style vectors representing distinct wardrobe sub-styles
+            query_vectors = self.wardrobe_service.get_style_cluster_vectors()
 
-        if query_vector is None:
-            # If no wardrobe items scanned yet, use zero vector or first product vector
-            query_vector = np.ones(EMBEDDING_DIM, dtype=np.float32) / np.sqrt(EMBEDDING_DIM)
+        if not query_vectors:
+            # If no wardrobe items scanned yet, fallback to neutral vector
+            query_vectors = [np.ones(EMBEDDING_DIM, dtype=np.float32) / np.sqrt(EMBEDDING_DIM)]
 
         liked_vecs, disliked_vecs = self.get_feedback_vectors()
 
         raw_results = self.vector_store.search(
-            query_vector=query_vector,
+            query_vectors=query_vectors,
             category=category,
             retailer=retailer,
             min_price=min_price,

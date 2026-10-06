@@ -3,7 +3,8 @@ import type { Product, WardrobeItem, FilterOptions } from "../types";
 import { ProductCard } from "./ProductCard";
 import { FilterBar } from "./FilterBar";
 import { Sparkles, ShoppingBag } from "lucide-react";
-import { fetchMetadata, fetchRecommendations } from "../api";
+import { fetchMetadata, fetchRecommendations, getImageUrl } from "../api";
+
 
 interface RecommendViewProps {
   selectedGarment: WardrobeItem | null;
@@ -120,7 +121,7 @@ export const RecommendView: React.FC<RecommendViewProps> = ({
           {selectedGarment ? (
             <div className="relative w-16 h-16 bg-neutral-800 border border-neutral-700 overflow-hidden flex-shrink-0">
               <img
-                src={`http://localhost:8000${selectedGarment.crop_url}`}
+                src={getImageUrl(selectedGarment.crop_url)}
                 alt="Selected item"
                 className="w-full h-full object-cover object-center"
               />

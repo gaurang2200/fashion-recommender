@@ -1,6 +1,19 @@
 import type { WardrobeItem, Product, FilterOptions, StyleInsightsData } from "./types";
 
-const API_BASE = "http://localhost:8000/api";
+const rawApiUrl = import.meta.env.VITE_API_URL as string | undefined;
+
+export const SERVER_BASE = rawApiUrl
+  ? rawApiUrl.replace(/\/api\/?$/, "")
+  : "http://localhost:8000";
+
+export const API_BASE = `${SERVER_BASE}/api`;
+
+export function getImageUrl(path: string | undefined): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return `${SERVER_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+}
+
 
 export async function fetchHealth() {
   const res = await fetch(`${API_BASE}/health`);

@@ -1,6 +1,7 @@
 import React from "react";
 import type { WardrobeItem } from "../types";
 import { Sparkles } from "lucide-react";
+import { getImageUrl } from "../api";
 
 interface WardrobeGridProps {
   items: WardrobeItem[];
@@ -53,12 +54,12 @@ export const WardrobeGrid: React.FC<WardrobeGridProps> = ({ items, selectedId, o
               {/* Image Preview: show extracted transparent crop */}
               <div className="relative aspect-square bg-neutral-50 overflow-hidden border-b border-neutral-100">
                 <img
-                  src={`http://localhost:8000${item.crop_url}`}
+                  src={getImageUrl(item.crop_url)}
                   alt={item.crop_filename}
                   className="w-full h-full object-cover object-center transition-all duration-300 hover:scale-105"
                   onError={(e) => {
                     // Fallback to original image if crop isn't loaded
-                    (e.target as HTMLImageElement).src = `http://localhost:8000${item.source_url}`;
+                    (e.target as HTMLImageElement).src = getImageUrl(item.source_url);
                   }}
                 />
                 
