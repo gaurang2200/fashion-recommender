@@ -3,8 +3,10 @@ FROM python:3.10-slim
 # Prevent Python from writing .pyc files and enable unbuffered logging
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000 \
-    KMP_DUPLICATE_LIB_OK=TRUE
+    PORT=7860 \
+    KMP_DUPLICATE_LIB_OK=TRUE \
+    HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
 WORKDIR /app
 
@@ -34,21 +36,29 @@ RUN pip install --no-cache-dir \
     beautifulsoup4 \
     pydantic
 
+# Create non-root user for Hugging Face Spaces (UID 1000)
+RUN useradd -m -u 1000 user
+
 # Create necessary directories
 RUN mkdir -p /app/backend /app/data /app/clothes /app/crops
 
-# Copy backend code
+# Copy backend code and pre-seeded data
 COPY backend /app/backend
-
-# Pre-seed initial database files, catalog index, wardrobe, and garment images
 COPY data /app/data
 COPY clothes /app/clothes
 COPY crops /app/crops
 
+# Ensure non-root user has full ownership of /app and /home/user
+RUN chown -R user:user /app /home/user
+
+# Switch to non-root user
+USER user
+
+EXPOSE 7860
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD curl -f http://localhost:8000/api/health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:7860/api/health || curl -f http://localhost:8000/api/health || exit 1
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

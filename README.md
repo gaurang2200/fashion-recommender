@@ -1,3 +1,13 @@
+---
+title: Fashion Recommender API
+emoji: 👗
+colorFrom: purple
+colorTo: pink
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 👗 Fashion Recommender & AI Stylist
 
 A multimodal AI wardrobe curation and fashion recommendation engine powered by **Fashion-CLIP**, **FAISS vector search**, and a modern **React + Vite** frontend.
