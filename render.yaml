@@ -1,5 +1,4 @@
 services:
-  # Backend FastAPI Web Service
   - type: web
     name: fashion-2-backend
     runtime: docker
@@ -14,20 +13,3 @@ services:
       name: fashion-2-data
       mountPath: /app/data
       sizeGB: 1
-
-  # Frontend React Static Site
-  - type: web
-    name: fashion-2-frontend
-    runtime: static
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: fashion-2-backend
-          property: url
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
